@@ -1,0 +1,27 @@
+[workspace]
+members = [
+  "crates/forgegate-cli",
+  "crates/forgegate-core",
+  "crates/forgegate-trace",
+  "crates/forgegate-policy",
+  "crates/forgegate-tools",
+  "crates/forgegate-store",
+  "crates/forgegate-eval",
+  "crates/forgegate-improver",
+]
+resolver = "2"
+
+[workspace.package]
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/YOUR_ORG/forgegate"
+
+[workspace.dependencies]
+anyhow = "1"
+chrono = { version = "0.4", features = ["serde", "clock"] }
+clap = { version = "4", features = ["derive"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml = "0.9"
+thiserror = "1"
+uuid = { version = "1", features = ["v4", "serde"] }

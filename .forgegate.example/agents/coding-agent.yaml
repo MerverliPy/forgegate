@@ -1,0 +1,19 @@
+id: coding-agent
+name: Coding Agent
+active_version: 1
+model:
+  provider: mock
+  name: mock-model
+prompt:
+  file: prompts/coding-agent.md
+policy:
+  file: policies/coding-agent.yaml
+tools:
+  - read_file
+  - write_file
+  - list_files
+  - git_status
+  - git_diff
+  - run_tests
+  - shell_command
+eval_suite: coding-agent-core

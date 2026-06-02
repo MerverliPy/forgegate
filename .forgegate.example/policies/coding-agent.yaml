@@ -1,0 +1,41 @@
+shell:
+  allowed_commands:
+    - npm test
+    - npm run test
+    - pnpm test
+    - yarn test
+    - pytest
+    - cargo test
+    - go test
+    - git diff
+    - git status
+  denied_commands:
+    - rm -rf
+    - sudo
+    - curl
+    - wget
+    - ssh
+    - scp
+    - chmod 777
+
+file_edits:
+  require_existing_file: true
+  deny_paths:
+    - .env
+    - .git/
+    - node_modules/
+    - target/
+    - dist/
+    - build/
+    - coverage/
+
+run_limits:
+  max_tool_calls: 30
+  max_runtime_seconds: 600
+  max_cost_usd: 2.00
+
+promotion:
+  min_pass_rate_delta: 0.05
+  max_cost_delta_ratio: 0.15
+  max_latency_delta_ratio: 0.25
+  require_no_new_policy_violations: true

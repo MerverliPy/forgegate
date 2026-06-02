@@ -1,0 +1,5 @@
+default_agent: coding-agent
+storage:
+  mode: local
+  traces: .forgegate/traces
+  database: .forgegate/forgegate.db

@@ -1,0 +1,24 @@
+id: fix-parser-tests
+name: Fix parser tests
+type: coding_task
+project_fixture: examples/typescript-project
+task: |
+  Fix the failing parser tests without changing public API behavior.
+checks:
+  - type: command
+    command: npm test
+    success_required: true
+  - type: git_diff
+    allowed_paths:
+      - src/parser.ts
+      - src/parser.test.ts
+    denied_paths:
+      - package.json
+      - .env
+  - type: policy
+    require_no_denied_commands: true
+scoring:
+  tests_passed: 0.50
+  minimal_diff: 0.20
+  policy_compliance: 0.20
+  explanation_quality: 0.10
