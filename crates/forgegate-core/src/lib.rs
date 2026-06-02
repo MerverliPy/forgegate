@@ -1,4 +1,5 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
+use forgegate_policy::PolicyConfig;
 use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -86,6 +87,30 @@ pub fn init_project(paths: &ProjectPaths) -> Result<()> {
     Ok(())
 }
 
+pub fn load_agent_config(paths: &ProjectPaths, agent_id: &str) -> Result<AgentConfig> {
+    let config_path = paths.agents_dir.join(format!("{agent_id}.yaml"));
+    let contents = fs::read_to_string(&config_path)
+        .with_context(|| format!("agent config not found: {}", config_path.display()))?;
+    let config: AgentConfig =
+        serde_yaml::from_str(&contents).with_context(|| "failed to parse agent config")?;
+    Ok(config)
+}
+
+pub fn load_prompt(paths: &ProjectPaths, file_ref: &FileRef) -> Result<String> {
+    let prompt_path = paths.forgegate_dir.join(&file_ref.file);
+    fs::read_to_string(&prompt_path)
+        .with_context(|| format!("prompt file not found: {}", prompt_path.display()))
+}
+
+pub fn load_policy_config(paths: &ProjectPaths, file_ref: &FileRef) -> Result<PolicyConfig> {
+    let policy_path = paths.forgegate_dir.join(&file_ref.file);
+    let contents = fs::read_to_string(&policy_path)
+        .with_context(|| format!("policy file not found: {}", policy_path.display()))?;
+    let config: PolicyConfig =
+        serde_yaml::from_str(&contents).with_context(|| "failed to parse policy config")?;
+    Ok(config)
+}
+
 fn write_if_missing(path: &Path, contents: &str) -> Result<()> {
     if !path.exists() {
         fs::write(path, contents)?;
@@ -108,5 +133,52 @@ mod tests {
             paths.traces_dir,
             PathBuf::from("/tmp/example/.forgegate/traces")
         );
+    }
+
+    #[test]
+    fn load_agent_config_from_initialized_project() {
+        let temp = std::env::temp_dir().join("forgegate_test_init");
+        let _ = std::fs::remove_dir_all(&temp);
+        let paths = ProjectPaths::new(temp.clone());
+        init_project(&paths).expect("init");
+
+        let config = load_agent_config(&paths, "coding-agent").expect("load config");
+        assert_eq!(config.id, "coding-agent");
+        assert_eq!(config.active_version, 1);
+        assert_eq!(config.model.provider, "mock");
+        assert!(config.tools.contains(&"read_file".to_string()));
+
+        let _ = std::fs::remove_dir_all(&temp);
+    }
+
+    #[test]
+    fn load_prompt_from_initialized_project() {
+        let temp = std::env::temp_dir().join("forgegate_test_prompt");
+        let _ = std::fs::remove_dir_all(&temp);
+        let paths = ProjectPaths::new(temp.clone());
+        init_project(&paths).expect("init");
+
+        let config = load_agent_config(&paths, "coding-agent").expect("load config");
+        let prompt = load_prompt(&paths, &config.prompt).expect("load prompt");
+        assert!(prompt.contains("Coding Agent Prompt"));
+        assert!(prompt.contains("Operating rules"));
+
+        let _ = std::fs::remove_dir_all(&temp);
+    }
+
+    #[test]
+    fn load_policy_config_from_initialized_project() {
+        let temp = std::env::temp_dir().join("forgegate_test_policy");
+        let _ = std::fs::remove_dir_all(&temp);
+        let paths = ProjectPaths::new(temp.clone());
+        init_project(&paths).expect("init");
+
+        let config = load_agent_config(&paths, "coding-agent").expect("load config");
+        let policy = load_policy_config(&paths, &config.policy).expect("load policy");
+        assert_eq!(policy.shell.allowed_commands.len(), 9);
+        assert!(policy.shell.denied_commands.contains(&"sudo".to_string()));
+        assert_eq!(policy.run_limits.max_tool_calls, 30);
+
+        let _ = std::fs::remove_dir_all(&temp);
     }
 }

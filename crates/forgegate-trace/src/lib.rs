@@ -64,6 +64,38 @@ pub struct RunOutcome {
 }
 
 impl RunTrace {
+    pub fn new(agent_id: impl Into<String>, agent_version: u32, task: impl Into<String>) -> Self {
+        let now = Utc::now();
+        Self {
+            trace_id: format!("trace_{}", Uuid::new_v4().simple()),
+            run_id: format!("run_{}", Uuid::new_v4().simple()),
+            agent_id: agent_id.into(),
+            agent_version,
+            task: task.into(),
+            started_at: now,
+            finished_at: None,
+            status: RunStatus::Queued,
+            score: None,
+            events: Vec::new(),
+            outcome: None,
+        }
+    }
+
+    pub fn start(&mut self) {
+        self.started_at = Utc::now();
+        self.status = RunStatus::Running;
+    }
+
+    pub fn add_event(&mut self, event: TraceEvent) {
+        self.events.push(event);
+    }
+
+    pub fn finish(&mut self, status: RunStatus, outcome: RunOutcome) {
+        self.finished_at = Some(Utc::now());
+        self.status = status;
+        self.outcome = Some(outcome);
+    }
+
     pub fn mock(task: &str) -> Self {
         let now = Utc::now();
         Self {
@@ -114,5 +146,70 @@ mod tests {
         let json = serde_json::to_string(&trace).expect("trace should serialize");
         assert!(json.contains("coding-agent"));
         assert!(json.contains("model_call"));
+    }
+
+    #[test]
+    fn trace_lifecycle_records_correct_statuses() {
+        let mut trace = RunTrace::new("coding-agent", 1, "test task");
+        assert_eq!(trace.status, RunStatus::Queued);
+        assert!(trace.events.is_empty());
+
+        trace.start();
+        assert_eq!(trace.status, RunStatus::Running);
+
+        trace.add_event(TraceEvent::PolicyDecision {
+            allowed: true,
+            reason: "test".to_string(),
+        });
+        assert_eq!(trace.events.len(), 1);
+
+        trace.finish(
+            RunStatus::Passed,
+            RunOutcome {
+                summary: "done".to_string(),
+                failure_category: None,
+            },
+        );
+        assert_eq!(trace.status, RunStatus::Passed);
+        assert!(trace.finished_at.is_some());
+        assert!(trace.outcome.is_some());
+    }
+
+    #[test]
+    fn trace_roundtrip_through_json() {
+        let mut trace = RunTrace::new("test-agent", 2, "some task");
+        trace.start();
+        trace.add_event(TraceEvent::ModelCall {
+            model: "mock/test".to_string(),
+            input_tokens: 100,
+            output_tokens: 50,
+            latency_ms: 10,
+        });
+        trace.add_event(TraceEvent::ToolCall {
+            tool: "list_files".to_string(),
+            args: serde_json::json!({"path": "."}),
+            status: ToolStatus::Success,
+            latency_ms: 5,
+            error: None,
+        });
+        trace.finish(
+            RunStatus::Passed,
+            RunOutcome {
+                summary: "all good".to_string(),
+                failure_category: None,
+            },
+        );
+
+        let json = serde_json::to_string(&trace).expect("serialize");
+        let deserialized: RunTrace = serde_json::from_str(&json).expect("deserialize");
+
+        assert_eq!(deserialized.trace_id, trace.trace_id);
+        assert_eq!(deserialized.run_id, trace.run_id);
+        assert_eq!(deserialized.agent_id, "test-agent");
+        assert_eq!(deserialized.agent_version, 2);
+        assert_eq!(deserialized.task, "some task");
+        assert_eq!(deserialized.status, RunStatus::Passed);
+        assert_eq!(deserialized.events.len(), 2);
+        assert_eq!(deserialized.outcome.unwrap().summary, "all good");
     }
 }

@@ -192,6 +192,7 @@ dependencies = [
  "anyhow",
  "clap",
  "forgegate-core",
+ "forgegate-policy",
  "forgegate-store",
  "forgegate-trace",
  "serde_json",
@@ -202,6 +203,7 @@ name = "forgegate-core"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "forgegate-policy",
  "serde",
  "serde_yaml",
 ]
@@ -226,6 +228,7 @@ name = "forgegate-policy"
 version = "0.1.0"
 dependencies = [
  "serde",
+ "serde_yaml",
  "thiserror",
 ]
 

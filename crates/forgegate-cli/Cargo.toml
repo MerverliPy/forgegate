@@ -13,6 +13,7 @@ path = "src/main.rs"
 anyhow.workspace = true
 clap.workspace = true
 forgegate-core = { path = "../forgegate-core" }
+forgegate-policy = { path = "../forgegate-policy" }
 forgegate-store = { path = "../forgegate-store" }
 forgegate-trace = { path = "../forgegate-trace" }
 serde_json.workspace = true

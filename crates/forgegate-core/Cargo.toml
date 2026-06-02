@@ -7,5 +7,6 @@ repository.workspace = true
 
 [dependencies]
 anyhow.workspace = true
+forgegate-policy = { path = "../forgegate-policy" }
 serde.workspace = true
 serde_yaml.workspace = true
