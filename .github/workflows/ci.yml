@@ -1,12 +1,13 @@
 name: CI
 
 on:
+  workflow_dispatch:
   push:
   pull_request:
 
 jobs:
   rust:
-    runs-on: ubuntu-latest
+    runs-on: selfrunners
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
